@@ -1,12 +1,10 @@
-import time
-time.sleep(60)
+from asyncio import subprocess
 import logging
 import os
 import sys
 import asyncio
-import threading
 import webbrowser
-from tkinter import Image, Label, Tk, filedialog
+from tkinter import Label, Tk, filedialog
 import cv2
 import psutil
 import pyautogui
@@ -16,14 +14,11 @@ from aiogram.filters import Command, CommandStart
 from aiogram.fsm.storage.memory import MemoryStorage
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.context import FSMContext
-from PIL import ImageGrab, Image
+from PIL import ImageGrab
 import pygetwindow as gw
-import tkinter as tk
 
-
-
-API_TOKEN = 'Ваш токен' #Вставьте токен
-Bot = Bot(token=API_TOKEN,request_timeout=300)
+API_TOKEN = '7848221838:AAHEGV7HqoFVu18Uv2jcpZmnVjQ2Sj4TcVU' #Вставьте токен
+Bot = Bot(token=API_TOKEN)
 dp = Dispatcher()
 
 awaiting_file = False
@@ -105,9 +100,8 @@ class TextDisplayState(StatesGroup):
 # Обработчик команды для вывода текста на экран
 @dp.message(F.text == "Текст на экран ✏️")
 async def request_screen_text(message: Message, state: FSMContext):
-    photo_path = "materials/pen.jpg"  # Замените на путь к вашему изображению
-    photo = FSInputFile(photo_path)
-    await message.answer_photo(photo,caption="Введите текст, который нужно отобразить на экране ✏️")
+    # Спрашиваем у пользователя текст для отображения
+    await message.answer("Введите текст, который нужно отобразить на экране ✏️")
     # Устанавливаем состояние для ожидания ввода текста
     await state.set_state(TextDisplayState.waiting_for_text)
 
@@ -156,9 +150,7 @@ async def display_screen_text(message: Message, state: FSMContext):
 @dp.message(CommandStart())
 @dp.message(F.text == 'Меню ⚙')
 async def start(message: Message):
-    photo_path = "materials/menu.jpg"  # Замените на путь к вашему изображению
-    photo = FSInputFile(photo_path)
-    await message.answer_photo(photo,caption='👋 Добро пожаловать в TG Link!\nЭтот бот — ваш личный помощник для дистанционного управления компьютером через Telegram.\n\nВозможности TG Link:\n📸Захват скриншотов и фото с веб-камеры\n🌐 Открытие сайтов и браузеров\n🔋 Мониторинг состояния батареи\n📂 Доступ к файлам и управление открытыми окнами\n⭐И еще много всего интересного\n\nПросто выберите команду из меню, и TG Link выполнит задачу на вашем компьютере!', reply_markup=startkalava)
+    await message.answer(text='👋 Добро пожаловать в TG Link!\nЭтот бот — ваш личный помощник для дистанционного управления компьютером через Telegram.\n\nВозможности TG Link:\n📸Захват скриншотов и фото с веб-камеры\n🌐 Открытие сайтов и браузеров\n🔋 Мониторинг состояния батареи\n📂 Доступ к файлам и управление открытыми окнами\n⭐И еще много всего интересного\n\nПросто выберите команду из меню, и TG Link выполнит задачу на вашем компьютере!', reply_markup=startkalava)
 
 @dp.callback_query(F.data == "starty")
 async def start(callback: CallbackQuery):
@@ -175,22 +167,16 @@ async def pover(message: Message):
 
 @dp.message(F.text == 'Сон 🌙')
 async def sleep_mode(message: Message):
-    photo_path = "materials/moon.jpg"  # Замените на путь к вашему изображению
-    photo = FSInputFile(photo_path)
-    await message.answer_photo(photo,caption="Вы точно хотите отправить компьютер в сон? 🌙",reply_markup=pover1)
+    await message.answer(text="Вы точно хотите отправить компьютер в сон? 🌙",reply_markup=pover1)
 
 @dp.message(F.text == 'Перезагрузка 🔃')
 async def sleep_mode(message: Message):
-    photo_path = "materials/reboot.jpg"  # Замените на путь к вашему изображению
-    photo = FSInputFile(photo_path)
-    await message.answer_photo(photo,caption="Вы точно хотите запустить перезагрузку? 🔃",reply_markup=pover3)
+    await message.answer(text="Вы точно хотите запустить перезагрузку? 🔃",reply_markup=pover3)
 
 
 @dp.message(F.text == 'Завершение работы 📴')
 async def off_mode(message: Message):
-    photo_path = "materials/power.jpg"  # Замените на путь к вашему изображению
-    photo = FSInputFile(photo_path)
-    await message.answer_photo(photo,caption="Вы точно хотите выключить компьютер? 📴",reply_markup=pover2)
+    await message.answer(text="Вы точно хотите выключить компьютер? 📴",reply_markup=pover2)
 
 @dp.callback_query(F.data == "yes1")
 async def request_file(callback: CallbackQuery):
@@ -222,86 +208,65 @@ async def request_file(callback: CallbackQuery):
 # Обработчик получения различных типов файлов от пользователя
 @dp.message(F.content_type.in_({'document', 'photo', 'video', 'video_note', 'audio'}))
 async def receive_file(message: types.Message):
-    try:
-        global awaiting_file
-        if awaiting_file:
-            if message.document:
-                file_id = message.document.file_id
-                file_name = message.document.file_name
-                extension = os.path.splitext(file_name)[1]
-            elif message.photo:
-                file_id = message.photo[-1].file_id  # Берем последнюю версию фото (самую большую)
-                file_name = "photo.jpg"
-                extension = ".jpg"
-            elif message.video:
-                file_id = message.video.file_id
-                file_name = "video.mp4"
-                extension = ".mp4"
-            elif message.video_note:
-                file_id = message.video_note.file_id
-                file_name = "video_note.mp4"
-                extension = ".mp4"
-            elif message.audio:
-                file_id = message.audio.file_id
-                file_name = message.audio.file_name or "audio.mp3"
-                extension = os.path.splitext(file_name)[1] if file_name else ".mp3"
+    global awaiting_file
+    if awaiting_file:
+        if message.document:
+            file_id = message.document.file_id
+            file_name = message.document.file_name
+            extension = os.path.splitext(file_name)[1]
+        elif message.photo:
+            file_id = message.photo[-1].file_id  # Берем последнюю версию фото (самую большую)
+            file_name = "photo.jpg"
+            extension = ".jpg"
+        elif message.video:
+            file_id = message.video.file_id
+            file_name = "video.mp4"
+            extension = ".mp4"
+        elif message.video_note:
+            file_id = message.video_note.file_id
+            file_name = "video_note.mp4"
+            extension = ".mp4"
+        elif message.audio:
+            file_id = message.audio.file_id
+            file_name = message.audio.file_name or "audio.mp3"
+            extension = os.path.splitext(file_name)[1] if file_name else ".mp3"
 
-            # Загрузка и сохранение файла
-            await message.answer("Загрузка...")
-            file = await Bot.get_file(file_id)
-            file_path = f"downloaded_file{extension}"
-            await Bot.download_file(file.file_path, destination=file_path)
+        # Загрузка и сохранение файла
+        file = await Bot.get_file(file_id)
+        file_path = f"downloaded_file{extension}"
+        await Bot.download_file(file.file_path, destination=file_path)
 
-            # Открываем файл на компьютере
-            os.startfile(file_path)
+        # Открываем файл на компьютере
 
-            # Делаем окно открытого файла поверх всех
-            await asyncio.sleep(1)  # Ждем, чтобы окно успело открыться
-            windows = gw.getWindowsWithTitle(file_name)
-            if windows:
-                windows[0].activate()  # Выставляем окно файла на передний план
+        os.startfile(file_path)
+        await message.answer(f"Файл '{file_name}' получен и открыт ✅")
 
-            await message.answer(f"Файл '{file_name}' получен и открыт ✅")
+        # Сбрасываем флаг ожидания файла
+        awaiting_file = False
 
-            # Сбрасываем флаг ожидания файла
-            awaiting_file = False
-    except Exception as e:
-        await message.answer(f"Ошибка: {e}")   
-             
+
 @dp.message(lambda message: message.text == 'Фото 📷')
 async def send_photo(message: Message):
     await message.answer("Загрузка...")
-
     try:
-        # Путь для папки "Загрузки"
-        save_dir = os.path.join(os.path.expanduser("~"), "Downloads", "TG_Link_Screenshots")
-        os.makedirs(save_dir, exist_ok=True)  # Создаём папку, если её нет
-
-        # Путь для сохранения фотографии
-        photo_path = os.path.join(save_dir, "photo.jpg")
-
         # Открываем доступ к камере
         camera = cv2.VideoCapture(0)
-
         # Захватываем изображение с камеры
         ret, frame = camera.read()
-        if not ret:
-            raise Exception("Не удалось захватить изображение с камеры.")
-
+        # Путь для сохранения фотографии
+        photo_path = os.path.join(os.getcwd(), "photo.jpg")
         # Сохраняем изображение в файл
         cv2.imwrite(photo_path, frame)
-
-        # Отправка фотографии пользователю
-        file = FSInputFile(photo_path)
+        file_path = "photo.jpg"
+        file = FSInputFile(file_path)
         await message.answer_document(document=file)
-
-        # Закрываем камеру
+        # Закрываем камеру (на всякий случай)
         camera.release()
     except Exception as e:
-        await message.answer(
-            f"Отсутствует доступ к камере❌\n\n1.Пожалуйста, проверьте подключение камеры и убедитесь, что доступ к ней разрешен в настройках устройства.\n"
-            f"2.Возможно, камера занята другим приложением, либо отсутствуют необходимые разрешения для её использования.\n\nОшибка: {e}"
-        )
+        await message.answer(f'Отсутствует доступ к камере❌\n\n1.Пожалуйста, проверьте подключение камеры и убедитесь, что доступ к ней разрешен в настройках устройства.\n2.Возможно, камера занята другим приложением, либо отсутствуют необходимые разрешения для её использования.\nОшибка:{e}')
+
+class Form(StatesGroup):
+    input_variable = State()
 
 @dp.message(F.text == 'Сайты 📱')
 async def handle_screenshot(message: types.Message):
@@ -375,8 +340,7 @@ async def handle_choose_file(callback: CallbackQuery):
     
     # Открытие проводника и выбор файла
     file_path = open_file_explorer()
-    await callback.message.answer("Загрузка...")
-
+    
     if file_path:
         try:
             # Отправка выбранного файла пользователю
@@ -392,20 +356,13 @@ async def handle_choose_file(callback: CallbackQuery):
 async def handle_screenshot(message: types.Message):
     await message.answer("Загрузка...")
     try:
-        # Указываем путь для сохранения файла
-        save_dir = os.path.join(os.path.expanduser("~"), "Downloads", "TG_Link_Screenshots")
-        os.makedirs(save_dir, exist_ok=True)  # Создаём папку, если её нет
-
-        save_path = os.path.join(save_dir, "screen.jpg")
-        
-        # Делаем скриншот
-        screenshot = ImageGrab.grab()
+        screenshot = ImageGrab.grab() 
+        save_path = r'screen.jpg'  # Укажите доступный путь для сохранения
         screenshot.save(save_path)
-        
-        # Отправляем файл
-        file = FSInputFile(save_path)
+        file_path = "screen.jpg"  # Замените на ваш путь
+        file = FSInputFile(file_path)  # Создаем объект файла
         await message.answer_document(document=file)
-    except Exception as e:
+    except Exception as e:  # Ловим исключение и сохраняем текст ошибки в переменную e
         await message.answer(f"Ошибка: {e}")
 
 @dp.message(F.text == 'Браузер 🌐')
