@@ -30,4 +30,4 @@
   - `psutil` для мониторинга состояния системы.  
   - `tkinter` для отображения текста на экране.  
 
-![images](https://github.com/user-attachments/assets/6080aed3-320b-4b87-860a-b3761027e311)
+
